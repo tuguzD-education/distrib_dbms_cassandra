@@ -1,8 +1,8 @@
-from typing import Final
+import typing as t
 import time
 
-test_keyspace: Final = 'TestKeyspace'.lower()
-table_name: Final = 'users'
+keyspace: t.Final[str] = 'TestKeyspace'.lower()
+table_name: t.Final[str] = 'users'
 
 
 def print_header(header: str):
@@ -19,55 +19,40 @@ def table_content(*attr: str, given_result=None):
 
     print([] if not result_list else
           (' ' if attr else '\n').join(result_list))
+    print()
 
 
 def db_query_execution():
     time.sleep(5)
-    print_header("Выполнение запросов к базе данных")
+    print_header("Выполнение простых запросов к БД")
 
-    # print(session.execute("select * from users"))
     table_content()
-    print()
 
     session.execute(f"INSERT INTO {table_name} (id, name, login, group) "
                     "VALUES (1, 'User', 'setevoy', 'wheel')")
-    # print(session.execute("select * from users").one())
     table_content()
 
     time.sleep(5)
-    print()
 
-    # result = session.execute("select * from users").one()
-    # print(result.login, result.name)
     table_content('login', 'name')
-    print()
-
-    # result = session.execute("select * from users")
-    # for x in result:
-    #     print(x.id)
     table_content('id')
-    print()
 
     name, login, group = 'newuser', 'newlogin', 'newgroup'
     session.execute("INSERT INTO users (id, name, login, group) "
                     "VALUES (2, %s, %s, %s)", (name, login, group))
-    # print(session.execute("select * from users"))
     table_content()
 
     time.sleep(5)
-    print()
 
     my_dict = {'name': 'secondname', 'login': 'secondlogin', 'group': 'secondgroup', }
     session.execute("INSERT INTO users (id, name, login, group) "
                     "VALUES (2, %(name)s, %(login)s, %(group)s)", my_dict)
-    # print(session.execute("select * from users"))
     table_content()
-    print()
 
 
 def request_asynchronous():
     time.sleep(5)
-    print_header("Асинхронные запросы")
+    print_header("Выполнение асинхронных запросов к БД")
 
     from cassandra import ReadTimeout
 
@@ -94,7 +79,7 @@ def request_asynchronous():
 
 def consistency_level_change():
     time.sleep(5)
-    print_header("Изменение Consistency Level")
+    print_header("Изменение уровня согласованности")
 
     from cassandra import ConsistencyLevel
     from cassandra.query import SimpleStatement
@@ -104,14 +89,13 @@ def consistency_level_change():
         consistency_level=ConsistencyLevel.QUORUM)
     session.execute(query, (3, 'name3', 'login3', 'group3'))
     table_content()
-    print()
 
 
 def prepared_statements():
     time.sleep(5)
-    print_header("Подготовленные запросы")
+    print_header("Выполнение подготовленного запроса к БД")
 
-    statement = session.prepare("SELECT * FROM users WHERE id=?")
+    statement = session.prepare(f"SELECT * FROM {table_name} WHERE id=?")
 
     [table_content(given_result=session.execute(statement, [user_id]))
         for user_id in range(1, 4)]
@@ -121,7 +105,7 @@ if __name__ == '__main__':
     from cassandra.cluster import Cluster
     cluster = Cluster()
 
-    session = cluster.connect(test_keyspace)
+    session = cluster.connect(keyspace)
     session.execute(f"TRUNCATE {table_name}")
 
     db_query_execution()
